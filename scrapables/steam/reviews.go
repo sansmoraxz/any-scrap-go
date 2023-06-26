@@ -6,7 +6,6 @@ import (
 	"github.com/sansmoraxz/any-scrape-go/queue"
 	"io"
 	"net/http"
-	"strconv"
 )
 
 type Reviews struct {
@@ -77,14 +76,14 @@ func (s *Reviews) AddToQueue() error {
 	return nil
 }
 
-func (p *ReviewParams) fetchSteamReviews() ([]byte, error) {
+func (p *ReviewParams) GetURL() string {
+	return fmt.Sprintf("https://store.steampowered.com/appreviews/%d?json=1&filter=%s&language=%s&num_per_page=%d&cursor=%s",
+		p.AppID, p.Filter, p.Language, p.NumPerPage, p.Cursor)
+}
+
+func (p *ReviewParams) Fetch() ([]byte, error) {
 	// http get request
-	resp, err := http.Get(
-		"https://store.steampowered.com/appreviews/" + strconv.Itoa(p.AppID) +
-			"?json=1&filter=" + p.Filter +
-			"&language=" + p.Language +
-			"&num_per_page=" + strconv.Itoa(p.NumPerPage) +
-			"&cursor=" + p.Cursor)
+	resp, err := http.Get(p.GetURL())
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +91,7 @@ func (p *ReviewParams) fetchSteamReviews() ([]byte, error) {
 	return body, err
 }
 
-func validateReviewData(data ReviewData) bool {
+func (data ReviewData) validate() bool {
 	return data.Success == 1
 }
 
@@ -104,7 +103,7 @@ func (s *Reviews) ScrapeFromQueue() error {
 			return err
 		}
 
-		reviewData, err := s.Params.fetchSteamReviews()
+		reviewData, err := s.Params.Fetch()
 		if err != nil {
 			return err
 		}
@@ -115,7 +114,7 @@ func (s *Reviews) ScrapeFromQueue() error {
 			return err
 		}
 
-		if !validateReviewData(_data) {
+		if !_data.validate() {
 			return fmt.Errorf("invalid review data for appid %d and cursor %s", _params.AppID, _params.Cursor)
 		}
 
@@ -126,8 +125,5 @@ func (s *Reviews) ScrapeFromQueue() error {
 		return s.SaveFunc(reviewData, s.Params.AppID)
 	}
 	_, err := s.Client.ReadMessage(fn)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
