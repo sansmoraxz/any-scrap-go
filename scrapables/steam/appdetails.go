@@ -10,7 +10,7 @@ import (
 
 type AppDetails struct {
 	Client   queue.Queue
-	SaveFunc func([]byte, int) error
+	SaveFunc func([]byte, int, string) error
 	Params   AppDetailsParams
 }
 
@@ -41,12 +41,12 @@ type AppDetailsData struct {
 	Success bool `json:"success"`
 }
 
-// AppDetailsResponse make sure to dereference to field App not this struct
-type AppDetailsResponse struct {
+// appDetailsResponse make sure to dereference to field App not this struct
+type appDetailsResponse struct {
 	App map[string]AppDetailsData
 }
 
-func (data AppDetailsResponse) validate() bool {
+func (data appDetailsResponse) validate() bool {
 	for _, v := range data.App {
 		return v.Success
 	}
@@ -83,7 +83,7 @@ func (p *AppDetails) ScrapeFromQueue() error {
 		if err != nil {
 			return err
 		}
-		var _data AppDetailsResponse
+		var _data appDetailsResponse
 		err = json.Unmarshal(appdata, &_data)
 		if err != nil {
 			return err
@@ -92,7 +92,7 @@ func (p *AppDetails) ScrapeFromQueue() error {
 			return fmt.Errorf("invalid app data for appid %d", _params.AppID)
 		}
 
-		return p.SaveFunc(msg, p.Params.AppID)
+		return p.SaveFunc(msg, p.Params.AppID, "")
 	}
 	_, err := p.Client.ReadMessage(fn)
 	return err
