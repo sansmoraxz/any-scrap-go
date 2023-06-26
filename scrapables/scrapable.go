@@ -9,3 +9,10 @@ type Scrapable interface {
 	// and advances to the next page
 	ScrapeFromQueue() error
 }
+
+type ScrapableParams interface {
+	// Fetch gets the data from the API
+	Fetch() ([]byte, error)
+	// GetURL returns the URL to fetch data from
+	GetURL() string
+}
