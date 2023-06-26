@@ -10,7 +10,7 @@ import (
 
 type Reviews struct {
 	Client   queue.Queue
-	SaveFunc func([]byte, int) error
+	SaveFunc func([]byte, int, string) error
 	Params   ReviewParams
 	hasNext  bool
 }
@@ -47,6 +47,7 @@ func NewSteamReviewParamsWithAppIDAndCursor(appid int, cursor string) *ReviewPar
 type ReviewData struct {
 	Success      int                `json:"success"`
 	QuerySummary ReviewQuerySummary `json:"query_summary"`
+	Reviews      interface{}        `json:"reviews"`
 	Cursor       string             `json:"cursor"`
 }
 
@@ -119,10 +120,14 @@ func (s *Reviews) ScrapeFromQueue() error {
 		}
 
 		s.Params = _params
-		s.hasNext = _data.Cursor != _params.Cursor
+		s.hasNext = _data.Cursor != _params.Cursor // as long as the cursor is different, there is more data to scrape
 		s.Params.Cursor = _data.Cursor
 
-		return s.SaveFunc(reviewData, s.Params.AppID)
+		if s.hasNext {
+			return s.SaveFunc(reviewData, _params.AppID, _params.Cursor)
+		}
+		// duplicate data not saved
+		return nil
 	}
 	_, err := s.Client.ReadMessage(fn)
 	return err
