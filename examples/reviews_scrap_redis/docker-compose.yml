@@ -1,0 +1,22 @@
+version: '3.8'
+services:
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - cache:/data
+  scraper:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      - REDIS_URL=redis:6379
+      - APPID=413150
+    volumes:
+      - $PWD:/app/scrap_data
+volumes:
+  cache:
+    driver: local
